@@ -319,6 +319,7 @@ def call_electrums_and_update_status(electrum_urls, electrum_call, eth_call):
                         url['current_status']['alive'] = False
                         url['current_status']['uptime'] = 0
                         url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M")
+            backup_electrums(electrum_urls)
     return electrum_urls
 
 
