@@ -7,7 +7,7 @@ from time import time, sleep
 from datetime import datetime
 from requests.exceptions import RequestException
 
-from electrums import (all_tickers, link, atomic_dex_mobile,
+from .electrums import (all_tickers, link, atomic_dex_mobile,
                        electrum_version_call, eth_call, eth_link)
 
 
@@ -78,6 +78,7 @@ def gather_tcp_electrumx_links_into_dict(electrum_links):
                 new_contacts = {}
                 try:
                     for contact in url['contact']:
+                      try:
                         email = contact.get('email')
                         discord = contact.get('discord')
                         github = contact.get('github')
@@ -87,6 +88,8 @@ def gather_tcp_electrumx_links_into_dict(electrum_links):
                             new_contacts['discord'] = discord
                         if github:
                             new_contacts['github'] = github
+                      except Exception as e:
+                          print(e)
                     url['contact'] = new_contacts
                     urls.append(url)
                     counter += 1
@@ -177,12 +180,10 @@ def call_explorers_and_update_status(explorers_urls):
                     url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M")
     return explorers_urls
 
-# this implementation is quite simple and doesn't check cert validity
-# in future it might be better to use something like this https://github.com/pbca26/electrum-komodo/blob/master/lib/interface.py#L123
+
 def tcp_call_electrumx_ssl(url, port, content):
   s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   s.settimeout(2)
-  # PROTOCOL_TLS includes all ssl versions even old
   wrappedSocket = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLS, ciphers='ADH-AES256-SHA')
   wrappedSocket.connect((url, port))
   wrappedSocket.sendall(json.dumps(content).encode('utf-8')+b'\n')
@@ -254,7 +255,7 @@ def call_electrums_and_update_status(electrum_urls, electrum_call, eth_call):
                                     print("EXCEPTION!!!11  Index Error!")
                                     print('url: {}, response: {}'.format(url, r))
                             url['current_status']['downtime'] = 0
-                            url['current_status']['uptime'] = datetime.now().strftime("%b-%d %H:%M") if not url['current_status']['uptime'] else url['current_status']['uptime']
+                            url['current_status']['uptime'] = datetime.now().strftime("%b-%d %H:%M")
                     except KeyError:
                         #create if there's no status dict
                         url['current_status'] = {}
@@ -277,7 +278,7 @@ def call_electrums_and_update_status(electrum_urls, electrum_call, eth_call):
                         if url['current_status']:
                             url['current_status']['alive'] = False
                             url['current_status']['uptime'] = 0
-                            url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M") if not url['current_status']['downtime'] else url['current_status']['downtime']
+                            url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M")
                     except KeyError:
                         #create if there's no status dict
                         url['current_status'] = {}
@@ -296,7 +297,7 @@ def call_electrums_and_update_status(electrum_urls, electrum_call, eth_call):
                         #update if status exists
                         if url['current_status']:
                             url['current_status']['alive'] = True
-                            url['current_status']['uptime'] = datetime.now().strftime("%b-%d %H:%M") if not url['current_status']['uptime'] else url['current_status']['uptime']
+                            url['current_status']['uptime'] = datetime.now().strftime("%b-%d %H:%M")
                             url['current_status']['downtime'] = 0
                     except KeyError:
                         #creation for the first time
@@ -311,7 +312,7 @@ def call_electrums_and_update_status(electrum_urls, electrum_call, eth_call):
                         if url['current_status']:
                             url['current_status']['alive'] = False
                             url['current_status']['uptime'] = 0
-                            url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M") if not url['current_status']['downtime'] else url['current_status']['downtime']
+                            url['current_status']['downtime'] = datetime.now().strftime("%b-%d %H:%M")
                     except KeyError:
                         #first time creation for unreachable parity node
                         url['current_status'] = {}
@@ -369,27 +370,3 @@ def pretty_print(electrum_urls):
             except KeyError:
                 print('{} --> {}'.format(url['url'], url['current_status']))
         print()
-
-
-
-#if __name__ == "__main__":
-    #result = tcp_call_electrumx('electrum2.cipig.net', 10054, version_call)
-    #print(result, end='')
-
-    
-    #backup_electrums_links(d)
-
-    #repo_links = combine_electrums_repo_links(all_tickers, link, eth_link)
-    #exp_json = get_explorers_json_data()
-    #exp_local_links = save_explorers_links_to_local_dict(exp_json)
-    #exp_local_links = restore_explorers_from_backup()
-
-    #d, c = gather_tcp_electrumx_links_into_dict(repo_links)
-    #d = restore_electrums_from_backup()
-
-    #d = call_electrums_and_update_status(d, electrum_version_call, eth_call)
-    #backup_electrums(d)
-
-    #de = call_explorers_and_update_status(exp_local_links)
-    #backup_explorers(de)
-    #pretty_print(d)
