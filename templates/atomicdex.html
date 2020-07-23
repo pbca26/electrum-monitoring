@@ -24,18 +24,24 @@
                             {% else %}
                             <td class="aligncenter"></td>
                             {% endif %}
-                            {% if url['current_status']['alive'] %}
-                                <td style="background:green">Alive!</td>
-                                <td>{{ url['current_status']['uptime'] }}</td>
-                            {% else %}
-                                <td style="background:red">Dead!</td>
-                                <td>{{ url['current_status']['downtime'] }}</td>
-                            {% endif %}
+                            {% if url['current_status'] %}
+                              {% if url['current_status']['alive'] %}
+                                  <td style="background:green">Alive!</td>
+                                  <td>{{ url['current_status']['uptime'] }}</td>
+                              {% else %}
+                                  <td style="background:red">Dead!</td>
+                                  <td>{{ url['current_status']['downtime'] }}</td>
+                              {% endif %}
 
-                            {% if url['current_status']['version'] %}
-                            <td class="aligncenter">{{ url['current_status']['version'] }}</td>
+                              {% if url['current_status']['version'] %}
+                              <td class="aligncenter">{{ url['current_status']['version'] }}</td>
+                              {% else %}
+                              <td class="aligncenter">Unknown</td>
+                              {% endif %}
                             {% else %}
-                            <td class="aligncenter">Unknown</td>
+                            <td class="aligncenter"></td>
+                            <td class="aligncenter"></td>
+                            <td class="aligncenter"></td>
                             {% endif %}
 
                             {% if url['contact']%}
