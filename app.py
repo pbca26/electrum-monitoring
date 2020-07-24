@@ -4,17 +4,16 @@ import requests
 import atexit
 from lib import electrum_lib
 from lib import electrums
+from datetime import datetime, timedelta
 
 from flask import Flask, render_template, jsonify
 from apscheduler.schedulers.background import BackgroundScheduler
-
 
 app = Flask(__name__)
 
 
 electrum_urls = {}
 explorers_urls = {}
-
 
 @app.before_first_request
 def restore_data_from_backup():
@@ -75,13 +74,11 @@ def get_all_explorers():
 ### BACKGROUND JOBS
 
 def gather_and_backup_electrums():
-    print('started background job: electrums update')
+    app.logger.info('started background job: electrums update')
     global electrum_urls
     electrum_urls = electrum_lib.call_electrums_and_update_status(electrum_urls, electrums.electrum_version_call, electrums.eth_call)
     electrum_lib.backup_electrums(electrum_urls)
-    print('finished background job: electrums update and backup')
-
-
+    app.logger.info('finished background job: electrums update and backup')
 
 def gather_and_backup_explorers():
     app.logger.info('started background job: explorers update')
@@ -90,17 +87,25 @@ def gather_and_backup_explorers():
     electrum_lib.backup_explorers(explorers_urls)
     app.logger.info('finished background job: explorers update and backup')
 
+def init_electrum_repo_links():
+    repo_links = electrum_lib.combine_electrums_repo_links(electrums.all_tickers, electrums.link, electrums.eth_link)
+
+    d, c = electrum_lib.gather_tcp_electrumx_links_into_dict(repo_links)
+    app.logger.info('finished background job: parse electrum urls')
+    global electrum_urls
+    electrum_urls = d
+    electrum_lib.backup_electrums(electrum_urls)
+    electrum_urls = electrum_lib.call_electrums_and_update_status(electrum_urls, electrums.electrum_version_call, electrums.eth_call)
+    electrum_lib.backup_electrums(electrum_urls)
+
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=gather_and_backup_electrums, trigger="interval", seconds=100)
-scheduler.add_job(func=gather_and_backup_explorers, trigger="interval", seconds=100)
-
-
+# run electrum servers check after web server is started
+scheduler.add_job(func=init_electrum_repo_links, run_date = datetime.now() + timedelta(seconds = 10))
+scheduler.add_job(func=gather_and_backup_electrums, trigger="interval", seconds=500)
+#scheduler.add_job(func=gather_and_backup_explorers, trigger="interval", seconds=100)
 scheduler.start()
 atexit.register(lambda: scheduler.shutdown())
 
-
-
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=os.environ['PORT'])
+    app.run(host="0.0.0.0", port=9000)
